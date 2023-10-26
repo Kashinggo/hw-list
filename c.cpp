@@ -1,6 +1,12 @@
-#include<bits/stdc++.h>
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <vector>
+#include <algorithm>
 using namespace std;
-int main() {
-    cout << "hello" << endl;
+using ll = long long;
+
+int main()
+{
     return 0;
 }
