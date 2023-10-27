@@ -1,3 +1,835 @@
+# 87 食堂供餐：
+
+
+
+# 86 响应报文时间：位运算
+
+```cpp
+#include <iostream>
+#include <algorithm>
+
+using namespace std;
+
+int calculate_resp_time(int T, int M) {
+    if (M >= 128) { // 最大值为 255
+    // exp 最大响应时间的高 5~7 位；mant 为最大响应时间的低 4 位
+        int mant = (M >> 3) & 0xF;
+        int exp = M & 0x7;
+        M = (mant | 0x10) << (exp + 3);
+    }
+    return T + M;
+}
+
+int main() {
+    int C, T, M;
+    cin >> C;
+    int min_resp_time = INT_MAX;
+
+    for (int i = 0; i < C; i++) {
+        cin >> T >> M;
+        int resp_time = calculate_resp_time(T, M);
+        min_resp_time = min(min_resp_time, resp_time);
+    }
+
+    cout << min_resp_time << endl;
+
+    return 0;
+}
+```
+
+# 85 最佳植树距离：二分搜索
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+int min_space(vector<int>& holes, int target) {
+    sort(holes.begin(), holes.end());
+    int left = 0;
+    int right = holes.back() - holes.front();
+    int answer = -1;
+
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+        int count = 1;
+        int previous = holes[0];
+
+        for (size_t i = 1; i < holes.size(); i++) {
+            if (holes[i] - previous >= mid) {
+                count++;
+                previous = holes[i];
+
+                if (count >= target) {
+                    answer = mid;
+                    left = mid + 1;
+                    break;
+                }
+            }
+        }
+
+        if (count < target) {
+            right = mid - 1;
+        }
+    }
+
+    return answer;
+}
+
+int main() {
+    int n;
+    cin >> n;
+
+    vector<int> holes(n);
+    for (int i = 0; i < n; i++) {
+        cin >> holes[i];
+    }
+
+    int target;
+    cin >> target;
+
+    int result = min_space(holes, target);
+    cout << result << endl;
+
+    return 0;
+}
+```
+
+# 84 AI 识别面板：sort
+题意绕，遇到可先跳过
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+int main() {
+    int n;
+    cin >> n;
+
+    vector<vector<int>> lights;
+    for (int i = 0; i < n; ++i) {
+        int id, x1, y1, x2, y2;
+        cin >> id >> x1 >> y1 >> x2 >> y2;
+        lights.push_back({id, (x1 + x2) / 2, (y1 + y2) / 2, (x2 - x1) / 2});
+    }
+
+    sort(lights.begin(), lights.end(), [](const vector<int>& a, const vector<int>& b) {
+        return a[2] < b[2];
+    });
+
+    vector<int> result;
+    int row_start_index = 0;
+    for (int i = 1; i < n; ++i) {
+        if (lights[i][2] - lights[row_start_index][2] > lights[row_start_index][3]) { // 不满足相同组，把上一组sort一下
+            sort(lights.begin() + row_start_index, lights.begin() + i, [](const vector<int>& a, const vector<int>& b) {
+                return a[1] < b[1];
+            });
+            for (int j = row_start_index; j < i; ++j) { // 保存这一组的结果
+                result.push_back(lights[j][0]);
+            }
+            row_start_index = i; // 另起一组
+        }
+    }
+
+    sort(lights.begin() + row_start_index, lights.end(), [](const vector<int>& a, const vector<int>& b) {
+        return a[1] < b[1];
+    }); /// don't forget !!!
+
+    for (int i = row_start_index; i < n; ++i) {
+        result.push_back(lights[i][0]);
+    }
+
+    for (int i = 0; i < result.size(); ++i) {
+        cout << result[i] << (i == result.size() - 1 ? '\n' : ' ');
+    }
+
+    return 0;
+}
+```
+
+# 83 矩阵稀疏扫描：模拟
+
+```cpp
+#include <iostream>
+#include <vector>
+using namespace std;
+
+int main() {
+    int row, col;
+    cin >> row >> col;
+
+    vector<vector<int>> row_mat(row, vector<int>(col));
+    vector<vector<int>> col_mat(col, vector<int>(row));
+
+    int row_total = 0;
+    int required_zeros = col / 2;
+    vector<int> row_zeros(row, 0);
+
+    for (int i = 0; i < row; ++i) {
+        for (int j = 0; j < col; ++j) {
+            cin >> row_mat[i][j];
+            col_mat[j][i] = row_mat[i][j];
+            if (row_mat[i][j] == 0) {
+                ++row_zeros[i];
+            }
+        }
+        if (row_zeros[i] >= required_zeros) {
+            ++row_total;
+        }
+    }
+
+    cout << row_total << endl;
+
+    int col_total = 0;
+    required_zeros = row / 2;
+    vector<int> col_zeros(col, 0);
+
+    for (int i = 0; i < col; ++i) {
+        for (int j = 0; j < row; ++j) {
+            if (col_mat[i][j] == 0) {
+                ++col_zeros[i];
+            }
+        }
+        if (col_zeros[i] >= required_zeros) {
+            ++col_total;
+        }
+    }
+
+    cout << col_total << endl;
+
+    return 0;
+}
+```
+
+# 82 比赛评分：sort
+
+```cpp
+#include<iostream>
+#include<vector>
+#include<string>
+#include<algorithm>
+using namespace std;
+
+class Person {
+public:
+    int id, total;
+    vector<int> scores;
+
+    Person(int id, int total, vector<int> scores) : id(id), total(total), scores(scores) {}
+
+    int check_count(vector<int> lst, int count) {
+        int cou = 0;
+        for (int i : lst) {
+            if (i == count) {
+                cou++;
+            }
+        }
+        return cou;
+    }
+
+    bool operator<(const Person& other) const { // overload!!!
+        if (total != other.total) {
+            return total > other.total;
+        } else {
+            const vector<int>& sc_ply_list = other.scores;
+            for (int i = 10; i > 0; i--) {
+                int ipl = check_count(sc_ply_list, i);
+                int ith = check_count(scores, i);
+                if (ipl != ith) {
+                    return ith > ipl;
+                }
+            }
+        }
+        return false;
+    }
+};
+
+int main() {
+    try {
+        int jiaolian, xuanshou;
+        cin >> jiaolian >> xuanshou;
+        if (jiaolian > 10 || jiaolian < 3 || xuanshou > 100 || xuanshou < 3) {
+            cout << -1 << endl;
+            return 0;
+        }
+
+        vector<vector<int>> myList(jiaolian, vector<int>(xuanshou));
+        for (int i = 0; i < jiaolian; i++) {
+            for (int j = 0; j < xuanshou; j++) {
+                cin >> myList[i][j];
+            }
+        }
+
+        vector<Person> persons;
+        for (int i = 0; i < xuanshou; i++) {
+            int total = 0;
+            vector<int> score_list(jiaolian);
+            for (int j = 0; j < jiaolian; j++) {
+                int score = myList[j][i];
+                if (score < 0 || score > 10) {
+                    cout << -1 << endl;
+                    return 0;
+                }
+                score_list[j] = score;
+                total += score;
+            }
+            persons.push_back(Person(i, total, score_list));
+        }
+
+        sort(persons.begin(), persons.end());
+        for (int i = 0; i < 3; i++) {
+            if (i == 2) {
+                cout << persons[i].id + 1 << endl;
+            } else {
+                cout << persons[i].id + 1 << ", ";
+            }
+        }
+    } catch (exception& e) {
+        cout << e.what() << endl;
+    }
+    return 0;
+}
+```
+
+# 80 双十一：双指针, 3-sum
+
+```cpp
+void solve_method(vector<int> &A, int quo)
+{
+    sort(A.begin(), A.end());
+    int N = A.size();
+    if (N < 3 || (accumulate(A.begin(), A.begin() + 3, 0) > quo))
+    {
+        cout << "-1" << endl;
+        return;
+    }
+    int res = INT_MAX;
+    for (int i = 0; i < N; ++i)
+    {
+        if (A[i] >= quo)
+        {
+            break;
+        }
+        int l = i + 1, r = N - 1;
+        while (l < r)
+        {
+            int sum = A[i] + A[l] + A[r];
+            if (quo > sum && (quo - sum < res - sum))
+            {
+                res = sum;
+            }
+            if (sum > quo)
+            {
+                --r;
+            }
+            else if (sum < quo)
+            {
+                ++l;
+            }
+            else
+            {
+                cout << quo << endl;
+                return;
+            }
+        }
+    }
+    cout << res << endl;
+}
+
+int main()
+{
+    string line, s;
+    getline(cin, line);
+    int quo;
+    cin >> quo;
+    stringstream ss(line);
+    vector<int> A;
+    while (getline(ss, s, ','))
+    {
+        A.push_back(stoi(s));
+    }
+    solve_method(A, quo);
+    return 0;
+}
+```
+
+# 79 数列还原：模拟, string
+
+```cpp
+#include <iostream>
+#include <string>
+using namespace std;
+
+void solve_method(int n) {
+    string content = "1";
+
+    if (n == 0) {
+        cout << content << endl;
+        return;
+    }
+
+    for (int i = 1; i <= n; ++i) {
+        string next_content = "";
+        char last = content[0]; // !!!
+        int count = 1;
+        for (size_t j = 1; j < content.size(); ++j) {
+            if (content[j] == last) {
+                ++count;
+            } else {
+                next_content += to_string(count) + last;
+                count = 1;
+                last = content[j];
+            }
+        }
+        next_content += to_string(count) + last; // !!!
+        content = next_content;
+    }
+
+    cout << content << endl;
+}
+
+int main() {
+    int n;
+    cin >> n;
+    solve_method(n);
+    return 0;
+}
+```
+
+# 78 iPv4 地址转换成整数：位运算
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <string>
+#include <sstream>
+
+using namespace std;
+
+void solve_method(const string& ip) {
+    vector<string> strings;
+    stringstream ss(ip);
+    string temp;
+    while (getline(ss, temp, '#')) {
+        strings.push_back(temp);
+    }
+    
+    int length = strings.size();
+    long long count = 0;
+    bool is_valid = true;
+    
+    if (length == 4) {
+        for (int i = 0; i < length; ++i) {
+            int n = stoi(strings[i]);
+            if (i == 0 && (n < 1 || n > 128)) {
+                is_valid = false;
+                break;
+            } else if (n < 0 || n > 255) {
+                is_valid = false;
+                break;
+            }
+            count += (long long)n << (8 * (3 - i)); // !!!
+        }
+    } else {
+        is_valid = false;
+    }
+    
+    if (is_valid) {
+        cout << count << endl;
+    } else {
+        cout << "invalid IP" << endl;
+    }
+}
+
+int main() {
+    string ip;
+    getline(cin, ip);
+    solve_method(ip);
+    return 0;
+}
+```
+
+# 75 补种未成活胡杨树：滑动窗口
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+int main() {
+    int num_of_dice, num_of_sides;
+    cin >> num_of_dice >> num_of_sides;
+    
+    vector<int> rolls(num_of_dice, 0);
+    int k;
+    cin.ignore(); // 用于在输入整数后忽略换行符，防止影响后续的字符串输入
+    
+    for (int i = 0; i < num_of_sides; ++i) {
+        int dice_side;
+        cin >> dice_side;
+        rolls[dice_side - 1] = 1; // withered tree idx
+    }
+    
+    cin >> k;
+    
+    int left = 0, right = 0, count = 0, result = 0;
+
+    while (right < num_of_dice) {
+        while (right < num_of_dice && count <= k) {
+            if (rolls[right] == 1) {
+                count--;
+            }
+            right++;
+            
+            if (count <= k) {
+                result = max(result, right - left);
+            }
+        }
+        
+        while (left <= right && count > k) {
+            if (rolls[left] == 1) {
+                count--;
+            }
+            left++;
+        }
+    }
+    
+    cout << result << endl;
+    
+    return 0;
+}
+```
+
+# 72 射击比赛：map, sort
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <string>
+#include <map>
+#include <sstream>
+#include <algorithm>
+
+using namespace std;
+
+vector<pair<string, int>> solve_method(int n, vector<string>& ids, vector<int>& nums) {
+    map<string, vector<int>> dct;
+
+    for (int i = 0; i < n; i++) {
+        dct[ids[i]].push_back(nums[i]);
+    }
+
+    for (auto it = dct.begin(); it != dct.end(); ) {
+        if (it->second.size() < 3) {
+            it = dct.erase(it);
+        } else {
+            sort(it->second.rbegin(), it->second.rend());
+            it->second.resize(3);
+            int sum = accumulate(it->second.begin(), it->second.end(), 0);
+            it->second.clear();
+            it->second.push_back(sum);
+            ++it;
+        }
+    }
+
+    vector<pair<string, int>> ret(dct.begin(), dct.end());
+    sort(ret.begin(), ret.end(), [](const pair<string, int>& a, const pair<string, int>& b) {
+        return a.second == b.second ? a.first > b.first : a.second > b.second;
+    });
+
+    return ret;
+}
+
+int main() {
+    int n;
+    cin >> n;
+    cin.ignore(); // cin: +ignore; getline: no need
+
+    string ids_input, nums_input;
+    getline(cin, ids_input);
+    getline(cin, nums_input);
+
+    stringstream ids_stream(ids_input), nums_stream(nums_input);
+    string id_token, num_token;
+
+    vector<string> ids;
+    vector<int> nums;
+
+    while (getline(ids_stream, id_token, ',')) {
+        ids.push_back(id_token);
+    }
+
+    while (getline(nums_stream, num_token, ',')) {
+        nums.push_back(stoi(num_token));
+    }
+
+    vector<pair<string, int>> ret = solve_method(n, ids, nums);
+    for (size_t i = 0; i < ret.size(); i++) {
+        cout << ret[i].first;
+        if (i != ret.size() - 1) {
+            cout << ",";
+        }
+    }
+    cout << endl;
+
+    return 0;
+}
+```
+
+# 66 字符串加密：fib
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <string>
+using namespace std;
+
+void solve_method(const vector<string>& strings) {
+    vector<int> a = {1, 2, 4};
+    vector<int> offsets(50, 0);
+    for (int i = 0; i < offsets.size(); ++i) {
+        if (i < 3) {
+            offsets[i] = a[i];
+        } else {
+            offsets[i] = offsets[i - 1] + offsets[i - 2] + offsets[i - 3];
+        }
+    }
+
+    for (const auto& str_ : strings) {
+        string chars = str_;
+        for (size_t i = 0; i < chars.size(); ++i) {
+            char c = chars[i];
+            chars[i] = char((c - 'a' + offsets[i]) % 26 + 'a');  // !!!
+        }
+        cout << chars << endl;
+    }
+}
+
+int main() {
+    int n;
+    cin >> n;
+    vector<string> strings(n);
+    for (int i = 0; i < n; ++i) {
+        cin >> strings[i];
+    }
+    solve_method(strings);
+    return 0;
+}
+```
+
+# 62 流水线：sort
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+void solve_method(int m, int n, vector<int>& jobs) {
+    sort(jobs.begin(), jobs.end());
+    if (n <= m) {
+        cout << *max_element(jobs.begin(), jobs.end()) << endl;
+        return;
+    }
+
+    vector<int> res(jobs.begin(), jobs.begin() + m);
+
+    for (int i = m; i < n; i++) {
+        auto min_iter = min_element(res.begin(), res.end()); // !!!
+        *min_iter += jobs[i];
+    }
+
+    cout << *max_element(res.begin(), res.end()) << endl;
+}
+
+int main() {
+    int m, n;
+    cin >> m >> n;
+    vector<int> jobs(n);
+    for (int i = 0; i < n; i++) {
+        cin >> jobs[i];
+    }
+    solve_method(m, n, jobs);
+    return 0;
+}
+```
+
+# 59 斗地主2: map
+比1简单，注意两个顺子间无重复、选最长的，已经输出 `9 10 J Q K A` 就不用重复 `10 J Q K A`
+
+# 58 斗地主1：map, 模拟
+
+```cpp
+#include <iostream>
+#include <unordered_map>
+#include <string>
+#include <vector>
+using namespace std;
+
+vector<string> graph = {"3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"};
+unordered_map<string, int> cards;
+
+void diff(unordered_map<string, int>& cards, string str) {
+    int pos = 0;
+    while ((pos = str.find("-")) != string::npos) {
+        string card = str.substr(0, pos);
+        if (cards.find(card) != cards.end()) {
+            cards[card]--;
+        }
+        str.erase(0, pos + 1);
+    }
+    if (cards.find(str) != cards.end()) { // !!!
+        cards[str]--;
+    }
+}
+
+string find(unordered_map<string, int>& cards) {
+    string res = "NO-CHAIN";
+    int l = 0, r = 0;
+    for (int i = 0; i < graph.size(); i++) {
+        string card = graph[i];
+        if (cards[card] > 0) {
+            l = i;
+            while (i + 1 < graph.size() && cards[graph[i + 1]] > 0) {
+                i++;
+            }
+            r = i + 1;
+            if (r - l > 5) {
+                res = "";
+                for (int j = l; j < r; j++) {
+                    res += graph[j];
+                    if (j < r - 1) {
+                        res += "-";
+                    }
+                }
+            }
+        }
+    }
+    return res;
+}
+
+void solveMethod(string my, string over) {
+    for (auto& card : graph) cards[card] = 4;
+    diff(cards, my);
+    diff(cards, over);
+    string res = find(cards);
+    cout << res << endl;
+}
+
+int main() {
+    string my, over;
+    getline(cin, my);
+    getline(cin, over);
+    solveMethod(my, over);
+    return 0;
+}
+```
+
+# 55 热点网络统计：heap, map
+
+```cpp
+#include <iostream>
+#include <unordered_map>
+#include <string>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+unordered_map<string, int> top_map;
+
+void solve_method(const string& line) {
+    if (line.size() > 2) {
+        top_map[line]++;
+    } else {
+        int n = stoi(line);
+        vector<pair<string, int>> sorted_list(top_map.begin(), top_map.end());
+        sort(sorted_list.begin(), sorted_list.end(), [](const pair<string, int>& a, const pair<string, int>& b) {
+            return a.second > b.second;
+        });
+        for (int i = 0; i < n; ++i) {
+            cout << sorted_list[i].first;
+            if (i != n - 1) {
+                cout << ",";
+            }
+        }
+        cout << endl;
+    }
+}
+
+int main() {
+    string line;
+    while (getline(cin, line)) {
+        solve_method(line);
+    }
+    return 0;
+}
+```
+
+# 50 找出同班小朋友：set，字符串
+
+```cpp
+#include <iostream>
+#include <set>
+#include <sstream>
+#include <vector>
+
+using namespace std;
+
+void solve_method(const string &line) {
+    istringstream iss(line);
+    vector<string> stus;
+    string s;
+    while (iss >> s) {
+        stus.push_back(s);
+    }
+
+    try {
+        set<int> c1, c2;
+        bool is1 = true;
+        for (size_t i = 0; i < stus.size(); ++i) {
+            size_t slash = stus[i].find('/');
+            int id_ = stoi(stus[i].substr(0, slash));
+            char same = stus[i][slash + 1];
+
+            if (i == 0) {
+                c1.insert(id_);
+                continue;
+            }
+            if (same == 'N') {
+                is1 = !is1;
+            }
+            (is1 ? c1 : c2).insert(id_);
+        }
+
+        for (int i : c1) {
+            cout << i << ' ';
+        }
+        cout << '\n';
+        if (!c2.empty()) {
+            for (int i : c2) {
+                cout << i << ' ';
+            }
+            cout << '\n';
+        }
+    } catch (...) {
+        cout << "ERROR\n";
+    }
+}
+
+int main() {
+    string line;
+    getline(cin, line);
+    solve_method(line);
+    return 0;
+}
+```
 
 # 47 路灯照明：模拟
 
@@ -570,6 +1402,7 @@ int main() {
     return 0;
 }
 ```
+
 # 27 磁盘容量：排序
 `vector<int> copy(old_vec)`
 `stable_sort(A.begin(), A.end(), [](const auto &a, const auto &b) {return ?});`
@@ -653,12 +1486,12 @@ int main() {
 ```cpp
 ```
 
-# 18 排序
+# 18 小朋友排队：排序
 
 偏简单，注意 lambda `[&h](const...)`
 
 
-# 17 模拟
+# 17 喊 7 的次数重排、喊七：模拟
 ```cpp
 #include <iostream>
 #include <vector>
@@ -714,7 +1547,7 @@ int main() {
 
 7和13跳过了，在宿舍做的，双指针
 
-# 16 栈
+# 16 找最小数：栈
 ```cpp
 #include <iostream>
 #include <vector>
@@ -766,9 +1599,8 @@ int main() {
 }
 ```
 
-# 15 排序
+# 15 组成最大数、卡片组成的最大数字：排序
 ```cpp
-
 static bool cmp(int a, int b){
         string A = to_string(a) + to_string(b);
         string B = to_string(b) + to_string(a);
@@ -776,7 +1608,119 @@ static bool cmp(int a, int b){
     }
 ```
 
-# 3 细节太多，中心扩散、找最长连续子串
+# 5 阿里巴巴找黄金宝箱：prefix sum
+```cpp
+#include <iostream>
+#include <vector>
+#include <numeric>
+using namespace std;
+
+int solve_method(const vector<int>& nums) {
+    int left_sum = 0;
+    int right_sum = accumulate(nums.begin(), nums.end(), 0);  // Calculate the sum of array elements
+
+    for (size_t i = 0; i < nums.size(); ++i) {
+        right_sum -= nums[i];  // In each loop, subtract the current element from the right side elements
+        if (left_sum == right_sum) {  // Judge whether the sum of the left side elements is equal to the sum of the right side elements
+            return i;
+        }
+        left_sum += nums[i];  // Add the current element to the left side element sum
+    }
+    return -1;
+}
+
+int main() {
+    // cin->line->strinstrem
+    //              | | |
+    //              x x x
+    vector<int> nums;
+    string input_str;
+    getline(cin, input_str);
+    stringstream ss(input_str);
+    string item;
+    while (getline(ss, item, ',')) {
+        nums.push_back(stoi(item));  // Convert the input string array to an integer array
+    }
+    cout << solve_method(nums) << endl;
+    return 0;
+}
+
+```
+
+# 4 选修课：排序，模拟
+```cpp
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <map>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+int main() {
+    map<string, vector<int>> student_dict;
+    string line;
+    
+    while (getline(cin, line)) {
+        stringstream ss(line);
+        string x;
+        while (getline(ss, x, ';')) {
+            stringstream sx(x);
+            string y;
+            getline(sx, y, ',');
+            int score;
+            sx >> score;
+
+            student_dict[y].push_back(score);
+        }
+    }
+
+    map<string, vector<pair<string, int>>> class_dict;
+    for (auto& p : student_dict) {
+        const string& s = p.first;
+        const vector<int>& scores = p.second; // !
+
+        if (scores.size() == 2) {
+            string cid = s.substr(0, 5);
+            int sum = scores[0] + scores[1];
+            class_dict[cid].push_back({s, sum});
+        }
+    }
+
+    if (class_dict.empty()) { // !
+        cout << "NULL" << endl;
+        return 0;
+    }
+
+    for (auto& p : class_dict) {
+        const string& cid = p.first;
+        vector<pair<string, int>>& students = p.second;
+
+        sort(students.begin(), students.end(), [](const auto& lhs, const auto& rhs) {
+            return lhs.second != rhs.second ? lhs.second > rhs.second : lhs.first < rhs.first;
+        });
+
+        cout << cid << endl;
+        for (size_t i = 0; i < students.size(); ++i) { // !
+            if (i > 0) cout << ';'; // !
+            cout << students[i].first;
+        }
+        cout << endl;
+    }
+    return 0;
+}
+
+// bonus
+struct Comparator {
+    bool operator()(const pair<string, int>& lhs, const pair<string, int>& rhs) const {
+        return lhs.second != rhs.second ? lhs.second > rhs.second : lhs.first < rhs.first;
+    }
+};
+//  Comparator comp; sort(students.begin(), students.end(), comp);
+```
+
+# 3 五子棋迷
+细节太多，中心扩散、找最长连续子串
 ```cpp
 #include <iostream>
 #include <vector>
@@ -853,11 +1797,10 @@ int main() {
 
     return 0;
 }
-
 ```
 
-
-# 2 模拟编码；真碰到这道题的话，放到最后做，细节太多
+# 2 模拟编码
+真碰到这道题的话，放到最后做，细节太多
 ```cpp
 #include <iostream>
 #include <bitset>
@@ -896,115 +1839,4 @@ int main() {
     cout << solve_method(num) << endl;
     return 0;
 }
-```
-
-# 5 prefix sum
-```cpp
-#include <iostream>
-#include <vector>
-#include <numeric>
-using namespace std;
-
-int solve_method(const vector<int>& nums) {
-    int left_sum = 0;
-    int right_sum = accumulate(nums.begin(), nums.end(), 0);  // Calculate the sum of array elements
-
-    for (size_t i = 0; i < nums.size(); ++i) {
-        right_sum -= nums[i];  // In each loop, subtract the current element from the right side elements
-        if (left_sum == right_sum) {  // Judge whether the sum of the left side elements is equal to the sum of the right side elements
-            return i;
-        }
-        left_sum += nums[i];  // Add the current element to the left side element sum
-    }
-    return -1;
-}
-
-int main() {
-    // cin->line->strinstrem
-    //              | | |
-    //              x x x
-    vector<int> nums;
-    string input_str;
-    getline(cin, input_str);
-    stringstream ss(input_str);
-    string item;
-    while (getline(ss, item, ',')) {
-        nums.push_back(stoi(item));  // Convert the input string array to an integer array
-    }
-    cout << solve_method(nums) << endl;
-    return 0;
-}
-
-```
-
-# 4 排序，模拟
-```cpp
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <map>
-#include <vector>
-#include <algorithm>
-using namespace std;
-
-int main() {
-    map<string, vector<int>> student_dict;
-    string line;
-    
-    while (getline(cin, line)) {
-        stringstream ss(line);
-        string x;
-        while (getline(ss, x, ';')) {
-            stringstream sx(x);
-            string y;
-            getline(sx, y, ',');
-            int score;
-            sx >> score;
-
-            student_dict[y].push_back(score);
-        }
-    }
-
-    map<string, vector<pair<string, int>>> class_dict;
-    for (auto& p : student_dict) {
-        const string& s = p.first;
-        const vector<int>& scores = p.second; // !
-
-        if (scores.size() == 2) {
-            string cid = s.substr(0, 5);
-            int sum = scores[0] + scores[1];
-            class_dict[cid].push_back({s, sum});
-        }
-    }
-
-    if (class_dict.empty()) { // !
-        cout << "NULL" << endl;
-        return 0;
-    }
-
-    for (auto& p : class_dict) {
-        const string& cid = p.first;
-        vector<pair<string, int>>& students = p.second;
-
-        sort(students.begin(), students.end(), [](const auto& lhs, const auto& rhs) {
-            return lhs.second != rhs.second ? lhs.second > rhs.second : lhs.first < rhs.first;
-        });
-
-        cout << cid << endl;
-        for (size_t i = 0; i < students.size(); ++i) { // !
-            if (i > 0) cout << ';'; // !
-            cout << students[i].first;
-        }
-        cout << endl;
-    }
-    return 0;
-}
-
-// bonus
-struct Comparator {
-    bool operator()(const pair<string, int>& lhs, const pair<string, int>& rhs) const {
-        return lhs.second != rhs.second ? lhs.second > rhs.second : lhs.first < rhs.first;
-    }
-};
-//  Comparator comp; sort(students.begin(), students.end(), comp);
 ```

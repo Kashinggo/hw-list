@@ -2,11 +2,18 @@
 #include <string>
 #include <sstream>
 #include <vector>
-#include <algorithm>
+#include <unordered_map>
+#include <algorithm> // sort, count
+#include <numeric>   // accmulate, gcd, lcm
 using namespace std;
 using ll = long long;
 
-int main()
+void solve_method(vector<int> &A, int quo) // deal & output
 {
+}
+
+int main() // input
+{
+
     return 0;
 }
