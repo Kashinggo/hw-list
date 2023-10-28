@@ -1,6 +1,413 @@
-# 87 食堂供餐：
+# 94 数据分类
 
+# 93 剩余可用字符集：模拟, OOP
 
+```cpp
+#include <iostream>
+#include <sstream>
+#include <map>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+class Item {
+public:
+    char c;
+    int num;
+    int count;
+
+    Item(char c, int num, int count) : c(c), num(num), count(count) {}
+};
+
+void solve_method(const string &line) {
+    size_t at_pos = line.find('@');
+    map<char, Item> char_map;
+    string all = line.substr(0, at_pos);
+    stringstream all_ss(all);
+    string pair;
+    int num = 0;
+    while (getline(all_ss, pair, ',')) {
+        char c = pair[0];
+        int count = stoi(pair.substr(2));
+        char_map[c] = Item(c, num++, count);
+    }
+    if (at_pos != string::npos) {
+        string others = line.substr(at_pos + 1);
+        stringstream others_ss(others);
+        while (getline(others_ss, pair, ',')) {
+            char c = pair[0];
+            int count = stoi(pair.substr(2));
+            char_map[c].count -= count;
+        }
+    }
+    vector<Item> items;
+    for (const auto &entry : char_map) {
+        if (entry.second.count > 0) {
+            items.push_back(entry.second);
+        }
+    }
+    sort(items.begin(), items.end(), [](const Item &a, const Item &b) {
+        return a.num < b.num;
+    });
+    for (size_t i = 0; i < items.size(); ++i) {
+        cout << items[i].c << ':' << items[i].count;
+        if (i + 1 != items.size()) {
+            cout << ',';
+        }
+    }
+    cout << endl;
+}
+
+int main() {
+    string line;
+    getline(cin, line);
+    solve_method(line);
+    return 0;
+}
+```
+
+# 92 阿里巴巴找黄金宝箱5：滑动窗口，前缀和
+
+```cpp
+#include <iostream>
+#include <unordered_map>
+#include <vector>
+
+using namespace std;
+
+int main() {
+    // 输入
+    string input;
+    getline(cin, input);
+    int k;
+    cin >> k;
+
+    // 将输入的字符串转换为整数数组
+    vector<int> nums;
+    int num = 0;
+    bool negative = false;
+    for (char ch : input) {
+        if (ch == '-') {
+            negative = true;
+        } else if (isdigit(ch)) {
+            num = num * 10 + (ch - '0');
+        } else if (ch == ',' || ch == ' ') {
+            nums.push_back(negative ? -num : num);
+            num = 0;
+            negative = false;
+        }
+    }
+    if (num > 0 || negative) {
+        nums.push_back(negative ? -num : num);
+    }
+
+    // 定义变量
+    unordered_map<int, int> frequency_map;
+    vector<int> prefix_sum(nums.size() + 1, 0);
+    int start = 0;
+    int max_sum = 0;
+
+    // 遍历数组
+    for (int i = 0; i < nums.size(); i++) {
+        prefix_sum[i + 1] = prefix_sum[i] + nums[i];
+        frequency_map[nums[i]]++;
+
+        while (frequency_map.size() > k) { // 用 j - i 的长度判断更适合，题目没说 unique k 而是 k length
+            int start_num = nums[start];
+            frequency_map[start_num]--;
+            if (frequency_map[start_num] == 0) {
+                frequency_map.erase(start_num);
+            }
+            start++;
+        }
+
+        if (frequency_map.size() == k) {
+            int current_sum = prefix_sum[i + 1] - prefix_sum[start];
+            max_sum = max(max_sum, current_sum);
+        }
+    }
+
+    // 输出结果
+    cout << max_sum << endl;
+
+    return 0;
+}
+```
+
+# 91 阿里巴巴找黄金宝箱4：单调栈
+循环的难度比一般的mono stack要大，最大值的结果才为-1
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <deque>
+using namespace std;
+
+vector<int> solve_method(const vector<int>& nums) {
+    deque<int> stack;
+    vector<int> res(nums.size(), 0);
+
+    for (size_t i = 0; i < nums.size(); ++i) {
+        while (!stack.empty() && nums[stack.front()] < nums[i]) {
+            int index = stack.front(); // front is `top`
+            stack.pop_front();
+            res[index] = nums[i];
+        }
+        stack.push_front(i);
+    }
+
+    while (!stack.empty()) {
+        bool flag = false;
+        int index = stack.front();
+        stack.pop_front();
+        for (size_t i = 0; i < nums.size(); ++i) {
+            if (nums[i] > nums[index]) {
+                flag = true;
+                res[index] = nums[i];
+                break;
+            }
+        }
+        if (!flag) {
+            res[index] = -1;
+        }
+    }
+
+    return res;
+}
+
+int main() {
+    vector<int> nums;
+    int num;
+    char comma;
+
+    while (cin >> num) {
+        nums.push_back(num);
+        if (cin.peek() == ',') {
+            cin >> comma;
+        } else {
+            break;
+        }
+    }
+
+    vector<int> result = solve_method(nums);
+
+    for (size_t i = 0; i < result.size(); ++i) {
+        if (i > 0) {
+            cout << ",";
+        }
+        cout << result[i];
+    }
+    cout << endl;
+
+    return 0;
+}
+```
+
+# 90 阿里巴巴找黄金宝箱3：map, 2-sum
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <sstream>
+
+using namespace std;
+
+int main() {
+    
+    // 读取输入的整数数组
+    string input;
+    getline(cin, input);
+    istringstream ss(input);
+    string numStr;
+    vector<int> nums;
+    while (getline(ss, numStr, ',')) {
+        nums.push_back(stoi(numStr));
+    }
+    
+    // 读取整数 n
+    int n;
+    cin >> n;
+    
+    // 初始化变量
+    unordered_map<int, int> lastIndexMap;
+    int res = -1;
+    
+    // 遍历整数数组
+    for (int i = 0; i < nums.size(); i++) { // 1-pass
+        int currentNum = nums[i];
+        
+        if (lastIndexMap.find(currentNum) != lastIndexMap.end() && i - lastIndexMap[currentNum] <= n) {
+            res = lastIndexMap[currentNum];
+            break;
+        }
+        
+        lastIndexMap[currentNum] = i;
+    }
+    
+    // 输出结果
+    cout << res << endl;
+    
+    return 0;
+}
+```
+
+# 89 阿里巴巴找黄金宝箱2：map, sort
+
+```cpp
+#include <iostream>
+#include <sstream>
+#include <map>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+int count(string a) {
+    stringstream ss(a);
+    string item;
+    map<string, int> nums;
+    vector<int> count_info;
+    while (getline(ss, item, ',')) {
+        nums[item]++;
+    }
+    for (auto& v : nums) {
+        count_info.push_back(v.second);
+    }
+    sort(count_info.begin(), count_info.end());
+    int size = count_info.size();
+    int total = 0;
+    int target = nums.size() / 2;
+    for (int i = 0; i < size; i++) {
+        total += count_info[size - i - 1];
+        if (total >= target) {
+            return i + 1;
+        }
+    }
+    return 0;
+}
+
+int main() {
+    string a;
+    getline(cin, a);
+    cout << count(a) << endl;
+    return 0;
+}
+```
+
+# 88 座位调整：数学
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <string>
+#include <sstream>
+
+using namespace std;
+
+int main() {
+    string input;
+    getline(cin, input);
+
+    vector<string> strings;
+    stringstream ss(input);
+    string item;
+    while (getline(ss, item, ',')) {
+        strings.push_back(item);
+    }
+
+    int length = strings.size();
+    vector<int> nums;
+
+    int count = 0; // 0的个数
+    bool first = true; // 是否第一段座位
+    bool has_one = false; // 全段是否有1
+
+    for (int i = 0; i < length; ++i) {
+        string str = strings[i];
+        if (str == "1") {
+            if (first && count > 1) { // 特殊：开头非0且至少有2个，001可以坐1人,00001可以坐2人
+                nums.push_back(count - 1);
+            } else if (count > 2) { // 两端有1，1001坐0个，10001坐一个
+                nums.push_back(count - 2);
+            }
+            count = 0;
+            first = false;
+            has_one = true;
+        } else {
+            ++count;
+        }
+        if (i == length - 1 && count > 1) { // 特殊：结尾是0，100坐1个，10000坐2个，000坐2个
+            nums.push_back(has_one ? count - 1 : count);
+        }
+    }
+
+    int result = 0;
+    for (int num : nums) {
+        result += ceil(num / 2.0); // 这里用了向上取整
+    }
+
+    cout << result << endl;
+
+    return 0;
+}
+```
+
+# 87 食堂供餐：二分搜索
+
+```cpp
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+int binary_search_min_speed(int total, int M, int N, const vector<int>& P) {
+    int min_speed = 0;
+    int max_speed = total - M;
+    int result = max_speed;
+
+    while (min_speed <= max_speed) {
+        int mid_speed = (min_speed + max_speed) / 2;
+        if (can_deliver(mid_speed, M, N, P)) {
+            result = mid_speed;
+            max_speed = mid_speed - 1;
+        } else {
+            min_speed = mid_speed + 1;
+        }
+    }
+
+    return result;
+}
+
+bool can_deliver(int speed, int foods, int N, const vector<int>& P) {
+    for (int i = 0; i < N; ++i) {
+        foods -= P[i];
+        if (foods < 0) {
+            return false;
+        }
+        foods += speed;
+    }
+    return true;
+}
+
+int main() {
+    int N, M;
+    cin >> N >> M;
+
+    vector<int> P(N);
+    for (int i = 0; i < N; ++i) {
+        cin >> P[i];
+    }
+
+    int total = accumulate(P.begin(), P.end(), 0);
+    int result = binary_search_min_speed(total, M, N, P);
+
+    cout << result << endl;
+
+    return 0;
+}
+```
 
 # 86 响应报文时间：位运算
 
@@ -206,7 +613,7 @@ int main() {
 }
 ```
 
-# 82 比赛评分：sort
+# 82 比赛评分：sort, OOP
 
 ```cpp
 #include<iostream>
