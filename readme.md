@@ -1,4 +1,477 @@
-# 94 数据分类
+
+# 64 排队游戏：二分查找
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <set>
+#include <map>
+#include <algorithm>
+
+using namespace std;
+
+int calculate_diss(int n, int m, int k, set<int>& pricks_idx, vector<int>& all_ability) {
+    int dissatisfaction = 0;
+    map<int, int> pricks_abilities;  // 记录刺头学生的能力和数量
+    int prick_count = 0;
+
+    for (int i = 0; i < n; ++i) {
+        int ability = all_ability[i];
+
+        if (pricks_idx.count(i)) {
+            prick_count++;
+            pricks_abilities[ability]++;
+        } else {
+            // 使用二分查找找到当前学生能力在刺头学生中的排名
+            auto it = pricks_abilities.lower_bound(ability);
+            int rank = distance(pricks_abilities.begin(), it);
+
+            // 计算不满意程度
+            dissatisfaction += prick_count - rank;
+        }
+    }
+
+    return dissatisfaction > k ? 1 : 0;
+}
+
+int main() {
+    int n, m, k;
+    cin >> n >> m >> k;
+    set<int> pricks_idx;
+    for (int i = 0; i < m; ++i) {
+        int idx;
+        cin >> idx;
+        pricks_idx.insert(idx - 1);
+    }
+    vector<int> all_ability(n);
+    for (int i = 0; i < n; ++i) {
+        cin >> all_ability[i];
+    }
+
+    int result = calculate_diss(n, m, k, pricks_idx, all_ability);
+    cout << result << endl;
+
+    return 0;
+}
+```
+
+---100分题型
+
+# 101 勾股数：数学
+(m - n)^3
+
+```cpp
+#include <iostream>
+using namespace std;
+
+bool relatively_prime(int x, int y) {
+    return gcd(x, y) == 1;
+}
+
+void solve_method(int n, int m) {
+    int count = 0;
+    for (int a = n; a < m - 1; a++) {
+        for (int b = a + 1; b < m; b++) {
+            for (int c = b + 1; c <= m; c++) {
+                if (relatively_prime(a, b) && relatively_prime(b, c) && relatively_prime(a, c) && a * a + b * b == c * c) {
+                    count++;
+                    cout << a << " " << b << " " << c << endl;
+                }
+            }
+        }
+    }
+    if (count == 0) {
+        cout << "Na" << endl;
+    }
+}
+
+int main() {
+    int n, m;
+    cin >> n >> m;
+    solve_method(n, m);
+    return 0;
+}
+```
+
+# 100 最长公共后缀：模拟
+
+```cpp
+#include <iostream>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+int main() {
+    string input;
+    getline(cin, input);
+
+    // 去掉方括号和双引号，然后分割字符串
+    input.erase(remove(input.begin(), input.end(), '['), input.end()); // 移动到末尾、删除
+    input.erase(remove(input.begin(), input.end(), ']'), input.end());
+    input.erase(remove(input.begin(), input.end(), '\"'), input.end());
+    vector<string> strings;
+    size_t pos = 0;
+    while ((pos = input.find(',')) != string::npos) {
+        strings.push_back(input.substr(0, pos));
+        input.erase(0, pos + 1);
+    }
+    strings.push_back(input);
+
+    string pre = strings[0];
+    for (size_t i = 1; i < strings.size(); i++) {
+        const string& str = strings[i];
+        size_t j = 1;
+        while (j <= min(pre.size(), str.size()) && pre[pre.size() - j] == str[str.size() - j]) { // !!!
+            j++;
+        }
+
+        if (j == 1) {
+            pre = "@Zero";
+            break;
+        }
+
+        pre = pre.substr(pre.size() - j + 1);
+    }
+
+    cout << pre << endl;
+
+    return 0;
+}
+```
+
+# 99 求符合条件元组个数：回溯/DFS
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <set>
+#include <algorithm>
+
+using namespace std;
+
+int res = 0;
+int target = 0;
+set<vector<int>> numsSet;
+
+void combine(const vector<int>& nums, int n, vector<int> lst, int index, int total) {
+    if (n == 0) {
+        if (total == target) {
+            sort(lst.begin(), lst.end());
+            numsSet.insert(lst);
+            res += 1;
+        }
+    } else {
+        for (int i = index; i < nums.size(); i++) {
+            if (i > index && nums[i] == nums[i - 1]) {
+                continue;
+            }
+            if (total + nums[i] > target) {
+                break;
+            }
+            lst.push_back(nums[i]); // in
+            combine(nums, n - 1, lst, i + 1, total + nums[i]); // try
+            lst.pop_back(); // out
+        }
+    }
+}
+
+int main() {
+    vector<int> nums;
+    int k;
+
+    string line;
+    getline(cin, line);
+    istringstream iss(line);
+    int num;
+    while (iss >> num) {
+        nums.push_back(num);
+    }
+
+    cin >> k >> target;
+
+    sort(nums.begin(), nums.end());
+    combine(nums, k, {}, 0, 0);
+
+    cout << res << endl;
+
+    return 0;
+}
+```
+
+# 98 字符串摘要：模拟
+
+```cpp
+#include <iostream>
+#include <string>
+#include <map>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+void solve_method() {
+    string str;
+    getline(cin, str);
+    string new_str = "";
+    for (char c : str) {
+        if (isalpha(c)) {
+            new_str += c;
+        }
+    }
+
+    int length = new_str.length();
+    if (length == 0) {
+        return;
+    }
+
+    int total = 1;
+    char temp = tolower(new_str[length - 1]);
+
+    if (length == 1) {
+        cout << temp << "0" << endl;
+        return;
+    }
+
+    vector<string> letter_list;
+    map<char, int> char_count_map;
+
+    for (int i = length - 2; i >= 0; --i) {
+        char c = tolower(new_str[i]);
+        if (temp == c) {
+            total++;
+        } else {
+            if (total == 1) {
+                total += char_count_map[temp] - 1;
+                char_count_map[temp] = total + 1;
+            } else {
+                char_count_map[temp] = total + char_count_map[temp];
+            }
+            letter_list.push_back(string(1, temp) + to_string(total));
+            temp = c;
+            total = 1;
+        }
+
+        if (i == 0) {
+            if (total == 1) {
+                total += char_count_map[temp] - 1;
+            }
+            letter_list.push_back(string(1, temp) + to_string(total));
+        }
+    }
+
+    sort(letter_list.begin(), letter_list.end(), [](const string &a, const string &b) {
+        int num_a = stoi(a.substr(1));
+        int num_b = stoi(b.substr(1));
+        if (num_a != num_b) {
+            return num_a > num_b;
+        }
+        return a[0] > b[0];
+    });
+
+    string res;
+    for (const string &s : letter_list) {
+        res += s;
+    }
+    cout << res << endl;
+}
+
+int main() {
+    solve_method();
+    return 0;
+}
+```
+
+# 97 经典屏保：模拟
+
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    int x, y, t;
+    cin >> x >> y >> t;
+
+    int x_dir = 1;
+    int y_dir = 1;
+    int width = 800;
+    int height = 600;
+    int xBoundary = width - 50;
+    int yBoundary = height - 25;
+
+    for (int i = 0; i < t; i++) {
+        x += x_dir;
+        y += y_dir;
+
+        if (x == 0 || x == xBoundary) {
+            x_dir *= -1;
+        }
+        if (y == 0 || y == yBoundary) {
+            y_dir *= -1;
+        }
+    }
+
+    cout << x << " " << y << endl;
+
+    return 0;
+}
+```
+
+# 96 数大雁：模拟
+
+题意是求重叠的数量，而非单纯的计数
+
+我们要模拟的是多个大雁同时发出的"quack"的过程，并且要找出最少需要多少只大雁。在这个过程中，我们必须保证大雁的叫声是完整且按顺序的"quack"。
+
+1. **定义数组"s"记录每个字符的出现次数**
+   - 这是因为我们需要知道在任何给定的时间点，是否有足够的"q"去匹配"u"，足够的"u"去匹配"a"，以此类推。如果不匹配，就意味着叫声是不完整或者顺序错误的。
+
+2. **对于每个字符的处理**
+   - 当字符是"q"时，增加"s"中第一个元素，这意味着有一只新的大雁开始叫"quack"。
+   - 对于其他字符，我们需要找到它在"quack"中的位置，并根据这个位置更新数组"s"。如果字符是"u"，我们就需要一个"q"来匹配，所以"s"中第一个元素减1；同时，"s"中第二个元素加1，表示"u"的数量增加了。对于"k"的处理也类似，但需要注意的是，当"k"出现时，表示一只大雁的叫声结束了，所以"s"中最后一个元素要减1。
+
+3. **实时计算"s"中元素的累加和的最大值"c"**
+   - 这是因为我们要找的是最少需要多少只大雁，而这个值就是在任何给定的时间点，已经开始但还没结束的"quack"的数量。
+
+4. **检查"s"中是否有元素的值为-1**
+   - 如果有，就说明叫声是不完整或者顺序错误的，应该直接返回-1。
+
+5. **遍历结束后检查"s"中元素的累加和是否为0**
+   - 如果不为0，说明叫声不完整，返回-1；否则，返回"c"的值，表示最少需要的大雁数量。
+
+```cpp
+#include <iostream>
+#include <string>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+int solve_method(const string& quack) {
+    const string b = "quack";
+    if (quack.length() % 5 != 0) {
+        return -1;
+    }
+    vector<int> s(b.length(), 0);
+    int c = 0;
+
+    for (char c : quack) {
+        size_t index = b.find(c);
+        if (index == 0) {
+            s[0]++;
+        } else {
+            s[index - 1]--;
+            s[index]++;
+            if (index == b.length() - 1) {
+                s[b.length() - 1]--;
+            }
+        }
+
+        c = max(c, accumulate(s.begin(), s.end(), 0)); // !!!
+        if (find(s.begin(), s.end(), -1) != s.end()) {
+            return -1;
+        }
+    }
+
+    if (accumulate(s.begin(), s.end(), 0) != 0) {
+        return -1;
+    }
+
+    return c;
+}
+
+int main() {
+    string user_input;
+    getline(cin, user_input);
+    int result = solve_method(user_input);
+    cout << result << endl;
+
+    return 0;
+}
+```
+
+# 95 TLV 编码：模拟
+
+```cpp
+#include <iostream>
+#include <string>
+using namespace std;
+
+void solveMethod(const string& tag, const string& source) {
+    size_t p = 0;
+    while (p < source.length()) {
+        string curTag = source.substr(p, 2);
+        string lenHEX = source.substr(p + 6, 2) + source.substr(p + 3, 2);
+        int lenDEC = stoi(lenHEX, nullptr, 16); // !!!
+        if (tag == curTag) {
+            string value = source.substr(p + 9, lenDEC * 3);
+            cout << value << endl;
+        }
+        p += 9 + lenDEC * 3;
+    }
+}
+
+int main() {
+    string tag, source;
+    cin >> tag;
+    getline(cin, source);
+    solveMethod(tag, source);
+    return 0;
+}
+
+```
+
+# 94 数据分类：模拟
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <map>
+
+using namespace std;
+
+int int_byte_sum(int x) {
+    int sum = 0;
+    for (int i = 0; i < 4; ++i) {
+        sum += (x >> (i * 8)) & 0xff;
+    }
+    return sum;
+}
+
+void solve_method(const vector<int>& ints) {
+    int c = ints[0];
+    int b = ints[1];
+    map<int, int> map;
+
+    for (size_t i = 2; i < ints.size(); ++i) {
+        int r = int_byte_sum(ints[i]) % b;
+        if (r < c) {
+            map[r]++;
+        }
+    }
+
+    int max = 0;
+    for (const auto& entry : map) {
+        if (entry.second > max) {
+            max = entry.second;
+        }
+    }
+    cout << max << endl;
+}
+
+int main() {
+    vector<int> ints;
+    int x;
+    while (cin >> x) {
+        ints.push_back(x);
+        if (cin.get() == '\n') {
+            break;
+        }
+    }
+    solve_method(ints);
+    return 0;
+}
+```
 
 # 93 剩余可用字符集：模拟, OOP
 
