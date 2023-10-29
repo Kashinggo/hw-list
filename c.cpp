@@ -10,6 +10,7 @@ using ll = long long;
 
 void solve_method(vector<int> &A, int quo) // deal & output
 {
+    //
 }
 
 int main() // input
